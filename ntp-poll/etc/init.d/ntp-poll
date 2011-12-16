@@ -65,7 +65,7 @@ TMPFILE=`mktemp`
 trap "rm -f $TMPFILE; exit" SIGINT SIGTERM   # do trap ctrl+c
 
 # achieve initial poll of ntp servers specified in puppet config
-for i in {1..$INTERVALL}; do
+for i in {1..$MAX_POLL_INTERVAL}; do
 	echo -n "Polling NTP source (CTRL-C to skip)..."
 	(sntp -P no -r $NTP_SERVER &> \$TMPFILE; sleep 2) &
 	spinner "\$!" '-/|\\'
