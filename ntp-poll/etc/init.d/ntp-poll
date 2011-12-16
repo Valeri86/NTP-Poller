@@ -1,0 +1,99 @@
+#!/bin/sh
+# /etc/init.d/ntp-poll
+#   and its symbolic link
+# /usr/sbin/rcntp-poll
+#
+### BEGIN INIT INFO
+# Provides:          ntp-poll
+# Required-Start:    $network $remote_fs $syslog
+# Required-Stop:     $network $remote_fs $syslog
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+# Short-Description: Start daemon at boot time
+# Description:       Initial ntp-poller before application start.
+# X-Interactive:     true
+# X-Start-Before     ntp
+### END INIT INFO
+
+#--------------------------------------------------------------------------------------------------------------
+# This script makes sure the showtime application is not started until ntp is synced with the local ntp servers
+#--------------------------------------------------------------------------------------------------------------
+#Author Valeri Windermut, valeri.windermut@dfs.de
+#---------------------------------------------------------------------------------------------------------------
+#Changelog:
+#2011-09-26	Initial version
+#---------------------------------------------------------------------------------------------------------------
+
+#==============================================================================================================
+# Sourcing LSB init functions and resetting the status
+#==============================================================================================================
+. /etc/rc.status
+rc_reset
+#==============================================================================================================
+#core_function
+#==============================================================================================================
+
+test -f /etc/sysconfig/ntp_poll_info && . /etc/sysconfig/ntp_poll_info
+
+poll_ntp_server(){
+	# Check whether we are in the init session group
+	if [ -d /proc/$PPID -a $(cat /proc/$PPID/sessionid) == $(cat /proc/1/sessionid) ]; then
+	    # We are in init => create another session to be able to use CTRL-C
+	    VT=$(fgconsole)
+	    SETSID=setsid
+	    INIT_TTY="exec 1>/dev/tty$VT 2>&1"
+	fi
+
+	$SETSID bash -c 'exec bash' <<EOF
+$INIT_TTY
+
+# Spinning bar code
+spinner() {
+	SP_STRING=\${2:-"'|/=\'"}
+	while [ -d /proc/\$1 ]; do
+		printf "\$SP_COLOUR\e7 %\${SP_WIDTH}s \e8\e[0m" "\$SP_STRING"
+		sleep \${SP_DELAY:-.2}
+		SP_STRING=\${SP_STRING#"\${SP_STRING%?}"}\${SP_STRING%?}
+	done
+}
+SP_COLOUR="" #\e[37;41m
+SP_WIDTH=1.1 ## Try: SP_WIDTH=5.5
+SP_DELAY=.2
+
+# create tempfile for sntp information
+TMPFILE=`mktemp`
+trap "rm -f $TMPFILE; exit" SIGINT SIGTERM   # do trap ctrl+c
+
+# achieve initial poll of ntp servers specified in puppet config
+for i in {1..$INTERVALL}; do
+	echo -n "Polling NTP source (CTRL-C to skip)..."
+	(sntp -P no -r $NTP_SERVER &> \$TMPFILE; sleep 2) &
+	spinner "\$!" '-/|\\'
+	if (grep failed \$TMPFILE > /dev/null); then
+	echo -e "\033[0;33m Failed\033[0m"
+	else break
+	fi
+
+done
+rm \$TMPFILE
+EOF
+}
+
+case "$1" in
+        start)
+		poll_ntp_server
+		;;
+        stop)
+                echo -n "Stopping ntp poll...."
+                ;;
+        restart)
+                $0 stop
+                rc_reset
+                $0 start
+                ;;
+        *)
+                echo "Usage: $0 {start|stop|restart}"
+                exit 1;
+                ;;
+esac
+
