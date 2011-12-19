@@ -16,7 +16,7 @@
 ### END INIT INFO
 
 #--------------------------------------------------------------------------------------------------------------
-# This script makes sure the showtime application is not started until ntp is synced with the local ntp servers
+# This script makes sure the system is not started until ntp is synced with the local ntp servers
 #--------------------------------------------------------------------------------------------------------------
 #Author Valeri Windermut, valeri.windermut@dfs.de
 #---------------------------------------------------------------------------------------------------------------
