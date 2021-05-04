@@ -18,7 +18,7 @@
 #--------------------------------------------------------------------------------------------------------------
 # This script makes sure the system is not started until ntp is synced with the local ntp servers
 #--------------------------------------------------------------------------------------------------------------
-#Author Valeri Windermut, valeri.windermut@dfs.de
+#Author Valeri Windermut, valeri.windermut@gmail.com
 #---------------------------------------------------------------------------------------------------------------
 #Changelog:
 #2011-09-26	Initial version
